@@ -1,0 +1,257 @@
+https://labs.play-with-docker.com/
+ https://kapeli.com/cheat_sheets/Dockerfile.docset/Contents/Resources/Documents/index#:~:text=The%20ENV%20instruction%20sets%20the,run%20from%20the%20resulting%20image.
+docker version               //-d for detach mode
+docker run -d -p 8800:80  httpd     //-p for public ip 8800 host ip and 80 is container port
+curl localhost:8800
+docker ps
+
+docker for linux
+-------------
+docker
+curl -fsSL get.docker.com -o get-docker.sh   //installs docker-ce
+sh get-docker.sh
+env | grep USER               //ubuntu
+sudo usermod -aG docker  $USER       //adding current user bret to docker  group 
+//docker needs root
+docker version     //only root command can talk to server and get backs server version 
+//install  docker-machine and docker compose & update both manually monthly
+docker-machine version
+docker-compose  version
+// install docker extension on vscode
+//tab auto completion  docker github
+docker version   // cli can talk to engine
+sudo groupadd docker
+sudo usermod -aG docker $USER
+sudo reboot
+docker info     // most config values of engine
+docker
+docker container run --publish 80:80 nginx         //pubicip:80     . nginx webpage
+docker container run --publish 80:80 -d nginx        //-d detach
+docker container ls
+docker container stop container_id
+docker container ls -a          //all containers
+docker container run --publish 80:80 --detach --name webhost nginx           //nginx is image & webhost is container name
+docker <command>  --help         //to see arguments of a command
+docker logs container_id               //docker container logs contianer_id
+docker logs container_name  
+docker container top             // (top - running process in container)u can see  master process & it spawns worker process 
+//check usage or try --help
+//container name or id    .   container keyword optional
+docker container --help
+docker container rm -f container_id          //-f force
+docker container run -p 8080:80 --name web -d nginx:1.11 nginx -T    //-T for change CMD run on start
+//starting mongo database
+docker run  --name  mongo -d mongo
+docker top mongo       //list process running in mongo container is a process on host . pid & ppid
+ps aux | grep mongod           // mongod is a  process in host/system with different pid 
+// below is a process for the command that u run above. so it listing that
+ubuntu      3169  0.0  0.2   7004  2128 pts/0    S+   05:04   0:00 grep --color=auto mongo
+Python image built for linux/x86_64 won't run as a python.exe on a Windows kernel. This is why Docker Desktop uses a lightweight Linux VM to run your containers.
+Check out the --platform command for forcing a different image than your platform's native kernel with docker run --help | grep platform
+docker run --help | grep platform  //set platform if server is multi-platform capable
+Technically, they are native Windows .exe binaries running in Docker containers on a Windows kernel, and have no Linux installed. They use PowerShell.exe or CMD.exe in the Dockerfile RUN commands.
+You can enable Windows Container mode in Docker Desktop for Windows by clicking "Switch to Windows containers" in the Docker whale menu, which then switches from WSL2 to Hyper-V running a slim Windows VM. It's an either-or setting, so you'll want to switch back to "Linux containers" mode for this course.
+# List all containers (only IDs)
+docker ps -aq
+# Stop all running containers
+docker stop $(docker ps -aq)
+# Remove all containers
+docker rm $(docker ps -aq)
+docker run -e MYSQL_RANDOM_ROOT_PASSWORD=yes -p 3306:3306   --name sql -d mysql   //-e setting environment variable in container
+docker container logs sql | grep PASSWORD    //  on output GENERATED ROOT PASSWORD: 6eRHRLOhdIrN3jL4vOluGIr6VzoIdTFL
+docker rm -f $(docker ps -aq)        //forcefully remove all running containers without stopping them
+docker container top          //process list in a container
+docker container inspect      //shows how container started & how metadata  config 
+docker container stats       //tells active container & what it's doing / performance stats for all containers
+//above command shows cpu , memeroy usage & limit 
+//use --help 
+docker <management_commands> <command>
+docker container run -it  --name proxy nginx bash       //accessing bash of nginx image . i for interactive , t for terminal
+ls -al           //list all files in container
+exit               //container is excited when u exit from container . because no command runs inside container 
+docker container run -it --name ubuntu ubuntu
+apt-get update
+apt-get install -y curl
+docker container start --help
+docker container start -ai ubuntu       //container stops  after exit from it 
+curl google.com
+docker container exec -it ubuntu bash    //first start container then exec  & it won't stop after exit from it
+//alpine 5mb size
+docker pull alpine      //apk package manager for alpine
+docker image ls 
+docker container port  container_id     //checking what ports are opening on that container
+//you connecting to a container using bridge network
+//2 virtual networks can connected to one container 
+--net = host       //to skip virtual networks
+docker container port nginx        //nginx is a running container   . --name nginx    (no =)
+docker  container inspect --format '{{ .NetworkSettings.IPAddress }}' nginx         //outputs ip address only
+//if 2 containers related to same application then keep both containers in same network so they can talk internally each other 
+docker container inspect //overview look of information about a specific container like Networks, IP address, mounts, and current status?
+//u can't have 2 containers listening on same port at host level
+docker network ls          //bridge , host , null
+docker network inspect  bridge            // listing all containers that are connected to bridge network            
+//these networks automatically assigns ipaddress & shows u ipam config
+//--network host        attaches container directly to host interface. it gains performance by skipping virtual networksbut sacrifices security of container model
+docker network create my_app_net            //my_app_net is a network created with default bridge driver 
+docker network connect 
+docker network disconnect 
+docker network create --help
+docker container run -d --name new_nginx --network my_app_net nginx   //attached an exsisting network my_app_net to new_nginx container
+docker network --help
+docker network inspect  my_app_net
+docker network  connect my_app_net myapp     //connecting my_app_net network to my_app container
+//2 networks for a single container is possible
+//can't rely ip address inside containers since they dynamic
+//docker relays on container names as the equivalent of host names for containers to each other 
+//docker daemon has a built in dns server that containers use by default
+//if we create any network that not the default bridge network . it has new feature , which is automatic dns resolution
+// for all containers on that virtual network from other containers on that virtual network using their container names
+//contianers on same network can communicate using bridge network only 
+docker container run -d --name my_nginx --network my_app_net nginx
+apt-get update && apt-get install -y iputils-ping
+docker exec -it new_nginx  ping my_nginx2                
+//default bridge network doesn't have dns built into it by default so u can use --link 
+//specifing manual link between containers in that default bridge network using --link 
+//dns used for intercommunication between containers on the same host and across hosts
+yum update curl          //on ubuntu
+docker container run --rm --name cent1 -it centos:7 bash    //cent1 is container name & --rm used for when u exit from container it will be removed automatically 
+curl --version
+// there was a bug introduced to the latest Alpine image 3.11.3 that affects how nslookup works on hostnames,
+//change your command to work around it with nslookup search. (with a dot added) or use an older Alpine image like alpine:3.10. 
+//dns  round robin - can have 2 different hosts with dns alias that respond to the same dns name
+//google.com has more than one server . employ dns round robin as their strategy. so actual multiple ip address in dns records behind the name that you using on internet
+//in docker 1.11 & later  , we create a custom network , we actually assign an alias so that  multiple containers can respond to the same dns name
+//for this 1.create virtual network  2. setup 2 containers using elastic search (data store ) image version 2 
+--network-alias (old)  --net-alias(new)   option for docker run command
+when you starting a container , u tells it  , i want another dns to call this container by not just it's container name 
+//resolve dns on networks or same app installed twice (dev / test environment on same server ) & both needs to call search in dns
+//add alias to containers when creating them & alias respond just like dns round robin does
+alpine nslookup   search     //returns list of dns address for the name search & this alpine assigned with --net to the same network that you assigned to first 2 containers
+centos curl -s search:9200     with --net  //  multiple times untill u see names fields below 
+//u get to know how to use virtual network with dns built in to make it easy to use multiple containers that have the same name
+
+--alias     //Add network-scoped alias for the container
+
+docker network create dude          //dude named network created
+docker container run -d --net dude --net-alias search elasticsearch:2   //for 1st container .search name as network alias
+docker container run -d --net dude --net-alias search elasticsearch:2    //for 2 nd container using elastic seaarch image
+docker container ls
+docker container run --rm --net dude alpine nslookup search        //nslookup our search network through alpine image which is in same network as other both 
+docker container run --rm --net dude centos curl -s search:9200     ///u get elastic 2 different elastic search names(elastic search names are random ) 
+//official images has nice documentation on docker  hub
+//tags might be different but image ID are same 
+//github repo for image sourcce code
+// https://github.com/docker-library/official-images/tree/master/library 
+docker images
+docker history nginx:latest         //history of this image layers
+docker history mysql
+//docker assigns unique SHA for each image layer
+docker image inspect nginx    //meta data or details about the image . can see exposed ports(target port/container port) 
+//environment variables , command that u run inside nginx by default , which os this image is designed to run)
+docker image tag --help
+docker images ls
+//multiple tags (labels that points to image ID) images
+docker image tag nginx adururakeshkumar/nginx      //re tag exsisting image . nginx is source image & we maade exact nginx image copy & renamed it to  adururakeshkumar/nginx 
+docker image push adururakeshkumar/nginx         //request denied
+docker login            //.docker/config     stores authentication key that allows my local docker cli to access docker hub
+docker logout         //when work is done
+docker image push adururakeshkumar/nginx              //image uploaded to docker hub
+docker image tag adururakeshkumar/nginx  adururakeshkumar/nginx:testing 
+docker image ls
+docker image push  adururakeshkumar/nginx:testing      //notice layer already exsists & in docker hub for same image has a tag with testing   
+//1. create a private repository on docker hub  . 2 . push image to docker hub
+//tagging an image doesn't changes image ID & latest tag by default
+RUN    //can execute shellscripts 
+//adding a key to repository where you can get package to install the latest nginx  from official nginx repo
+&&   //all commands fit into single layer
+//can use logging drivers inside docker engine itself to control all the logs for all containers on our host 
+//nginx logs to stdout
+https://docs.docker.com/engine/reference/builder/
+--------- on Dockerfile folder
+docker image build -t  customnginx    .          //-t for tag
+//it keeps HASH in build cache so next time  we build this thing if that line in docker file hasn't changed. it's not going to rerun it 
+//if a layer 5/step 5 changes then from   layer  5  all   rerun / built again 
+//changes less   keep in top  . changes less ( keep bottom)
+on docker file2
+----------
+changing default nginx directoy with WORKDIR
+it uses exsisting CMD from base image nginx 
+docker container run -p 80:80 --rm nginx
+docker image build -t nginx-with-html  .
+docker container run -p 80:80 --rm nginx-with-html
+docker image ls
+-------------building image node.js   . assignment  , use alpine . tag & push to hub . remove from local cache 
+FROM node:6-alpine
+EXPOSE 3000
+RUN apk add --no-cache tini
+WORKDIR /usr/src/app
+COPY package.json  package.json
+RUN npm install &&  npm cache clean --force
+COPY .  .
+CMD [ "/sbin/tini" , "--" , "node" , "./bin/www"]
+-------
+docker build -t testnode .
+docker container run --rm  -p 80:3000 testnode 
+docker tag testnode adururakeshkumar/testnode:1.0
+docker images
+docker login
+docker push adururakeshkumar/testnode:1.0
+docker rmi adururakeshkumar/testnode:1.0
+docker container run --rm -p 80:3000 adururakeshkumar/testnode           //downloaded from hub & run it as container
+docker image prune to clean up just "dangling" images
+docker system prune will clean up everything
+The big one is usually docker image prune -a which will remove all images you're not using. Use docker system df to see space usage.
+
+
+---------------kubernetes
+curl <hostname>.<namespace>.svc.cluster.local
+kubectl create deployment sample --image nginx --dry-run -o yaml
+kubectl create job sample --image nginx --dry-run -o yaml     //restart policy :never
+kubectl  run test --image nginx --schedule "*/1 * * * * " --dry-run          //creates cron job 
+replace , delete , create , scale , edit , expose , run 
+apply -declarative
+---              //multiple objects in yaml
+kubectl api-resources
+kubectl api-versions
+kubectl explain services --recurcive       //services is  a service object    
+kubectl explain services.spec.type
+//prefer server version api docs than client 
+kubectl diff -f app.yml          // server status compared to local yaml file (shows what lines changed )
+kubectl apply -f app.yaml --server-dry-run       //response from server after comparing with server status (shows changed files )
+kubectl apply -f app.yaml --dry-run         //response from kubectl client
+adding custom stuff into kubernetes & talk to kubernetes & get data out of it  //annotations-store config data
+proxies , ingress store different configurations inside different annotations
+spec.selector.matchLabels     //deployment
+spec.selector         //service
+same names  , same ips  for db       //statefulsets
+volume lives outside of pod
+csi (container storage interface)-plugin install on all nodes . any of container use the plugin to  get access  to storage
+OSI layer 7 //http -Ingress             //traefix (proxy, LetsEncrypt -automatic get certificate for website )  , istio 
+CRD (db , monitor tool , backup , custom ingres)
+proxy for authentication
+kubectl get all --all-namespaces
+~/.kube/config file    //to see which context u are in 
+kubectl config get-contexts
+kubectl config set
+//service mesh
+docker security (kernel namespaces , cgroups-limt resource usage)
+//docker bench security scans docker configuration not actual containers /images
+docker top containerId              //gives linux running proces
+screen shot 1474//use other user not root when building dockerfile so if it's hacked they  have less privileges
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
